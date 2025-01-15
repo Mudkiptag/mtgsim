@@ -1,23 +1,58 @@
 const playerCount = 8;
+const cardsPerPack = 15;
 let packs = [];
 let currentPack = 0;
 let playerHands = Array.from({ length: playerCount }, () => []);
 let playerColors = Array.from({ length: playerCount }, () => null);
 let deck = [];
 let sideboard = [];
-
+let cardCache = [];
 const colors = ['W', 'U', 'B', 'R', 'G']; // White, Blue, Black, Red, Green
 
-async function fetchCards() {
+async function fetchAllCards() {
+    // Check if the cards are already cached
+    if (cardCache.length > 0) {
+        return cardCache;
+    }
+
     try {
         updateMessage("Generating...");
-        const response = await fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints`);
+        let page = 1;
+        let hasMore = true;
+        const fetchPromises = [];
+
+        // Fetch the first page to determine total number of pages
+        const response = await fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints&page=${page}`);
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         const data = await response.json();
+        cardCache = cardCache.concat(data.data);
+        hasMore = data.has_more;
+        const totalPages = Math.ceil(data.total_cards / 175); // Scryfall returns up to 175 cards per page
+
+        // Fetch remaining pages in parallel
+        for (page = 2; page <= totalPages; page++) {
+            fetchPromises.push(fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints&page=${page}`));
+        }
+
+        // Wait for all fetch promises to resolve
+        const responses = await Promise.all(fetchPromises);
+        const dataPromises = responses.map(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        });
+
+        // Process data from all pages
+        const allData = await Promise.all(dataPromises);
+        allData.forEach(d => {
+            cardCache = cardCache.concat(d.data);
+        });
+
         updateMessage(""); // Clear the message after fetching
-        return data.data;
+        return cardCache;
     } catch (error) {
         updateMessage("Error fetching cards. Please try again later.");
         throw error; // Re-throw the error to handle it in startDraft
@@ -61,7 +96,7 @@ function createPack(cards) {
 
 async function startDraft() {
     try {
-        const cards = await fetchCards();
+        const cards = await fetchAllCards();
 
         // Create 3 packs for each player
         for (let i = 0; i < playerCount; i++) {
