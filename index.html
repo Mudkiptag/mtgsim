@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Draft Simulator</title>
+    <style>
+        .card {
+            display: inline-block;
+            margin: 10px;
+            cursor: pointer;
+        }
+        .pack, .deck, .sideboard {
+            margin: 20px;
+        }
+        .tab {
+            display: inline-block;
+            padding: 10px;
+            cursor: pointer;
+            background-color: lightgray;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: gray;
+            color: white;
+        }
+        .content {
+            display: none;
+        }
+        .content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Magic: The Gathering Draft Simulator</h1>
+    <button onclick="startDraft()">Start Draft</button>
+    <div id="tabs">
+        <div class="tab active" onclick="showTab('packs')">Packs</div>
+        <div class="tab" onclick="showTab('deck')">Deck</div>
+        <div class="tab" onclick="showTab('sideboard')">Sideboard</div>
+    </div>
+    <div id="packs" class="pack content active"></div>
+    <div id="deck" class="deck content">
+        <h2>Deck:</h2>
+    </div>
+    <div id="sideboard" class="sideboard content">
+        <h2>Sideboard:</h2>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
