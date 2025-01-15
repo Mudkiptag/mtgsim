@@ -2,8 +2,11 @@ const playerCount = 8;
 let packs = [];
 let currentPack = 0;
 let playerHands = Array.from({ length: playerCount }, () => []);
+let playerColors = Array.from({ length: playerCount }, () => null);
 let deck = [];
 let sideboard = [];
+
+const colors = ['W', 'U', 'B', 'R', 'G']; // White, Blue, Black, Red, Green
 
 async function fetchCards() {
     const response = await fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints`);
@@ -18,11 +21,31 @@ function getRandomCard(cards, rarity) {
 
 function createPack(cards) {
     const pack = [];
-    pack.push(getRandomCard(cards, 'rare') || getRandomCard(cards, 'mythic'));
-    for (let i = 0; i < 3; i++) pack.push(getRandomCard(cards, 'uncommon'));
-    for (let i = 0; i < 6; i++) pack.push(getRandomCard(cards, 'common'));
-    for (let i = 0; i < 3; i++) pack.push(cards[Math.floor(Math.random() * cards.length)]);
+    // Add 1 rare or mythic
+    let rareOrMythic = getRandomCard(cards, 'mythic') || getRandomCard(cards, 'rare');
+    pack.push(rareOrMythic);
+    // Add 3 uncommons
+    for (let i = 0; i < 3; i++) {
+        pack.push(getRandomCard(cards, 'uncommon'));
+    }
+    // Add 6 commons
+    for (let i = 0; i < 6; i++) {
+        pack.push(getRandomCard(cards, 'common'));
+    }
+    // Add 3 cards of any rarity (wildcards)
+    for (let i = 0; i < 3; i++) {
+        const randomCard = cards[Math.floor(Math.random() * cards.length)];
+        pack.push(randomCard);
+    }
+    // Add 1 basic land
     pack.push(getRandomCard(cards, 'basic'));
+    
+    // Sort the pack so mythics are first, then rares, then uncommons, then commons
+    pack.sort((a, b) => {
+        const rarityOrder = ['mythic', 'rare', 'uncommon', 'common', 'basic'];
+        return rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity);
+    });
+
     return pack;
 }
 
@@ -71,7 +94,7 @@ function pickCard(card) {
 function passPacks() {
     // AI picks cards
     for (let i = 1; i < playerCount; i++) {
-        const aiPick = packs[(currentPack + i) % packs.length][0];
+        const aiPick = aiPickCard(playerColors[i], packs[(currentPack + i) % packs.length]);
         playerHands[i].push(aiPick);
         packs[(currentPack + i) % packs.length] = packs[(currentPack + i) % packs.length].filter(c => c !== aiPick);
     }
@@ -89,6 +112,50 @@ function passPacks() {
     }
 
     displayPacks();
+}
+
+function aiPickCard(color, pack) {
+    // Pick the first rare if any
+    for (const card of pack) {
+        if (card.rarity === 'rare' || card.rarity === 'mythic') {
+            if (!color) {
+                const cardColor = card.colors.find(c => colors.includes(c));
+                if (cardColor) {
+                    playerColors[currentPack % playerCount] = cardColor; // Set AI color if not already set
+                }
+            }
+            return card;
+        }
+    }
+
+    // Prioritize cards of AI's color
+    const colorPriority = ['rare', 'mythic', 'uncommon', 'common'];
+    for (const rarity of colorPriority) {
+        for (const card of pack) {
+            if (card.colors.includes(color) && card.rarity === rarity) {
+                return card;
+            }
+        }
+    }
+
+    // Pick a colorless card if no cards of AI's color are available
+    for (const card of pack) {
+        if (card.colors.length === 0) {
+            return card;
+        }
+    }
+
+    // Pick the highest rarity card available
+    for (const rarity of colorPriority) {
+        for (const card of pack) {
+            if (card.rarity === rarity) {
+                return card;
+            }
+        }
+    }
+
+    // Default to the first card if no other options (shouldn't happen)
+    return pack[0];
 }
 
 function moveToDeckOrSideboard(card) {
