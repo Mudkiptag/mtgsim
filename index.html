@@ -30,11 +30,15 @@
         .content.active {
             display: block;
         }
+        #message {
+            margin: 20px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <h1>Magic: The Gathering Draft Simulator</h1>
-    <button onclick="startDraft()">Start Draft</button>
+    <button id="startButton">Start Draft</button>
     <div id="message"></div>
     <div id="tabs">
         <div class="tab active" onclick="showTab('packs')">Packs</div>

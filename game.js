@@ -12,6 +12,9 @@ async function fetchCards() {
     try {
         updateMessage("Generating...");
         const response = await fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
         const data = await response.json();
         updateMessage(""); // Clear the message after fetching
         return data.data;
@@ -228,4 +231,4 @@ function updateMessage(message) {
 }
 
 // Attach the startDraft function to the button
-document.querySelector('button').addEventListener('click', startDraft);
+document.getElementById('startButton').addEventListener('click', startDraft);
