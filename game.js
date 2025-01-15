@@ -72,7 +72,7 @@ function displayPacks() {
 
     packs[currentPack].forEach(card => {
         const cardImg = document.createElement('img');
-        cardImg.src = card.image_uris.small;
+        cardImg.src = card.image_uris ? card.image_uris.small : ''; // Ensure the image URI exists
         cardImg.alt = card.name;
         cardImg.classList.add('card');
         cardImg.onclick = () => pickCard(card);
@@ -210,3 +210,6 @@ function shuffleArray(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
 }
+
+// Attach the startDraft function to the button
+document.querySelector('button').addEventListener('click', startDraft);
