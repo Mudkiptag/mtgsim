@@ -9,9 +9,16 @@ let sideboard = [];
 const colors = ['W', 'U', 'B', 'R', 'G']; // White, Blue, Black, Red, Green
 
 async function fetchCards() {
-    const response = await fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints`);
-    const data = await response.json();
-    return data.data;
+    try {
+        updateMessage("Generating...");
+        const response = await fetch(`https://api.scryfall.com/cards/search?order=set&q=legal%3Amodern&unique=prints`);
+        const data = await response.json();
+        updateMessage(""); // Clear the message after fetching
+        return data.data;
+    } catch (error) {
+        updateMessage("Error fetching cards. Please try again later.");
+        throw error; // Re-throw the error to handle it in startDraft
+    }
 }
 
 function getRandomCard(cards, rarity) {
@@ -50,16 +57,20 @@ function createPack(cards) {
 }
 
 async function startDraft() {
-    const cards = await fetchCards();
+    try {
+        const cards = await fetchCards();
 
-    // Create 3 packs for each player
-    for (let i = 0; i < playerCount; i++) {
-        for (let j = 0; j < 3; j++) {
-            packs.push(createPack(cards));
+        // Create 3 packs for each player
+        for (let i = 0; i < playerCount; i++) {
+            for (let j = 0; j < 3; j++) {
+                packs.push(createPack(cards));
+            }
         }
-    }
 
-    displayPacks();
+        displayPacks();
+    } catch (error) {
+        console.error("Failed to start draft:", error);
+    }
 }
 
 function displayPacks() {
@@ -209,6 +220,11 @@ function shuffleArray(array) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
+}
+
+function updateMessage(message) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.textContent = message;
 }
 
 // Attach the startDraft function to the button
